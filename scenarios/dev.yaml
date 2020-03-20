@@ -20,5 +20,5 @@ target: !!python/object:scenario.Scenario.Rectangle
   x: 2000
   y: -2000
 target_v:
-- -8000
-- 2000
+- -2000
+- 0
