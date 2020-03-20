@@ -1,0 +1,24 @@
+!!python/object:scenario.Scenario.Scenario
+room: !!python/object:scenario.Scenario.Rectangle
+  height: 10000
+  theta: 0
+  width: 10000
+  x: 0
+  y: 0
+sensor: !!python/object:scenario.Scenario.LidarSensor
+  radius: 10
+  sensor_range:
+  - 100
+  - 10000
+  v_profile: 31.41592653589793
+sensor_sample_rate_s: 0.001
+step_size_s: 0.001
+target: !!python/object:scenario.Scenario.Rectangle
+  height: 50
+  theta: 0
+  width: 2000
+  x: 2000
+  y: -2000
+target_v:
+- -8000
+- 2000
