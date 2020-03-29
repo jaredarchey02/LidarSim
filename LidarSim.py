@@ -19,7 +19,7 @@ def closest_point(point, point_arr):
 
 class Simulation(object):
 
-    def __init__(self, scenario_path, render=False, draw_env=False):
+    def __init__(self, scenario_path, render=False, draw_env=False, pre_steps=0):
         self.scenario = load_scenario(scenario_path)
         if render:  # Draww environment start
             self.f, self.ax = plt.subplots()
@@ -34,6 +34,9 @@ class Simulation(object):
         self.environment = (self.scenario.room, self.scenario.target)
         self.sampling = False
         self.rendering = render
+        self.last_intersection = None
+        for _ in range(pre_steps):
+            self.step()
         self.write_output()
         #self.step(0)
 
@@ -68,7 +71,7 @@ class Simulation(object):
                 intersection.extend(obj.get_laser_points(laser))
             intersection = closest_point(self.lidar_pos.to_cartesian(),
                                          intersection)
-
+            print(intersection)
             if self.rendering:
                 self.ax.plot(*intersection, 'ro')
         else:
@@ -135,15 +138,21 @@ class Simulation(object):
 
 
 if __name__ == "__main__":
-    # todo Make everything relative to updae rate of sensor
+    # todo Make everything relative to update rate of sensor
     dev_scenario = "scenarios/dev.yaml"
     create_dev_file(dev_scenario)
     scenario_path = dev_scenario
-    sim = Simulation(scenario_path, render=True, draw_env=True)
+    sim0 = Simulation(scenario_path, render=True, draw_env=True, pre_steps=0)
+    sim1 = Simulation(scenario_path, render=False, draw_env=False, pre_steps=1)
+    sim2 = Simulation(scenario_path, render=False, draw_env=False, pre_steps=2)
+    sim3 = Simulation(scenario_path, render=False, draw_env=False, pre_steps=3)
+    sim4 = Simulation(scenario_path, render=False, draw_env=False, pre_steps=4)
+    sims = [sim0, sim1, sim2, sim3, sim4]
+
     #sim.render()
-    for _ in range(200):
-        sim.step_time()
-        sim.render(draw_laser=False)
+    # for _ in range(1):
+    #     sim.step_time()
+    #     sim.render(draw_laser=False)
     # x = 300
     # for t in range(360):
     #     sim.step(t)
