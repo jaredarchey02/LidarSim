@@ -4,17 +4,19 @@ import pylab as plt
 import numpy as np
 import os
 
-def closest_point(point, point_arr):
+def closest_point(point, point_arr, compare):
     mag = lambda p: np.sqrt(p[0] ** 2 + p[1] ** 2)
     point_mag = mag(point)
     closest = None
     _closest_point = None
-    for target_point in point_arr:
+    compare_true = None
+    for i, target_point in enumerate(point_arr):
         mag_diff = mag(target_point) - point_mag
         if closest is None or mag_diff < closest:
             closest = mag_diff
             _closest_point = target_point
-    return _closest_point
+            compare_true = compare[i]
+    return _closest_point, compare_true
 
 
 class Simulation(object):
@@ -35,6 +37,7 @@ class Simulation(object):
         self.sampling = False
         self.rendering = render
         self.last_intersection = None
+        self.found_target = False
         for _ in range(pre_steps):
             self.step_time(move=False)
         #self.step(0)
@@ -67,12 +70,15 @@ class Simulation(object):
             self.sampling = True
             laser = self._laser()
             intersection = []
+            is_target = []
             for obj in self.environment:
                 intersection.extend(obj.get_laser_points(laser))
-            print(intersection)
-            intersection = closest_point(self.lidar_pos.to_cartesian(),
-                                         intersection)
+                is_target.append(obj == self.scenario.target)
+            #print(intersection)
+            intersection, is_target = closest_point(self.lidar_pos.to_cartesian(),
+                                                    intersection, is_target)
             self.last_intersection = intersection
+            self.found_target = is_target
             if self.rendering:
                 self.ax.plot(*intersection, 'ro')
         else:
@@ -91,8 +97,8 @@ class Simulation(object):
         intersection = []
         for obj in self.environment:
             intersection.extend(obj.get_laser_points(laser))
-        intersection = closest_point(self.lidar_pos.to_cartesian(),
-                                     intersection)
+        intersection, is_target = closest_point(self.lidar_pos.to_cartesian(),
+                                                intersection)
         #self.last_intersection = intersection
         if self.rendering:
             self.ax.plot(*intersection, 'ro')
@@ -164,10 +170,11 @@ if __name__ == "__main__":
 
         with open(output_file, 'w') as f:
             f.write("Time,x,y,is_target\n")
-            for _ in range(1):
+            for _ in range(170):
                 sim.step_time()
                 sim.render(draw_laser=False)
-                f.write(f"{sim.t},{sim.last_intersection[0]},{sim.last_intersection[1]},False\n")
+                f.write(f"{sim.t},{sim.last_intersection[0]},"
+                        f"{sim.last_intersection[1]},{sim.found_target}\n")
                 print(sim.t, sim.last_intersection)
     # x = 300
     # for t in range(360):
