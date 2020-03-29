@@ -2,7 +2,7 @@ from scenario.Scenario import load_scenario, create_dev_file, Position, \
     LineSegment
 import pylab as plt
 import numpy as np
-
+import os
 
 def closest_point(point, point_arr):
     mag = lambda p: np.sqrt(p[0] ** 2 + p[1] ** 2)
@@ -36,8 +36,7 @@ class Simulation(object):
         self.rendering = render
         self.last_intersection = None
         for _ in range(pre_steps):
-            self.step()
-        self.write_output()
+            self.step_time(move=False)
         #self.step(0)
 
     def step(self, t):
@@ -45,11 +44,12 @@ class Simulation(object):
         self.t = t
         self.rotate_lidar()
 
-    def step_time(self):
+    def step_time(self, move=True):
         if self.stepped_step: raise PermissionError(
             "Step time called after step, WRONG API USAGE!")
         self.t += self.scenario.step_size_s
-        self.move_target()
+        if move:
+            self.move_target()
         self.control_lidar()
         self.sample_lidar()
 
@@ -69,9 +69,10 @@ class Simulation(object):
             intersection = []
             for obj in self.environment:
                 intersection.extend(obj.get_laser_points(laser))
+            print(intersection)
             intersection = closest_point(self.lidar_pos.to_cartesian(),
                                          intersection)
-            print(intersection)
+            self.last_intersection = intersection
             if self.rendering:
                 self.ax.plot(*intersection, 'ro')
         else:
@@ -92,7 +93,7 @@ class Simulation(object):
             intersection.extend(obj.get_laser_points(laser))
         intersection = closest_point(self.lidar_pos.to_cartesian(),
                                      intersection)
-
+        #self.last_intersection = intersection
         if self.rendering:
             self.ax.plot(*intersection, 'ro')
 
@@ -138,21 +139,36 @@ class Simulation(object):
 
 
 if __name__ == "__main__":
-    # todo Make everything relative to update rate of sensor
+
+    # Add scenario to run here
     dev_scenario = "scenarios/dev.yaml"
+
+    # Seperate parts of file
+    path, _ = os.path.splitext(dev_scenario)
+    path, fname = os.path.split(path)
+
+    # Number of sims to run, each sim begins 1 time step later than the previous
+    number_sims = 1
     create_dev_file(dev_scenario)
     scenario_path = dev_scenario
-    sim0 = Simulation(scenario_path, render=True, draw_env=True, pre_steps=0)
-    sim1 = Simulation(scenario_path, render=False, draw_env=False, pre_steps=1)
-    sim2 = Simulation(scenario_path, render=False, draw_env=False, pre_steps=2)
-    sim3 = Simulation(scenario_path, render=False, draw_env=False, pre_steps=3)
-    sim4 = Simulation(scenario_path, render=False, draw_env=False, pre_steps=4)
-    sims = [sim0, sim1, sim2, sim3, sim4]
 
-    #sim.render()
-    # for _ in range(1):
-    #     sim.step_time()
-    #     sim.render(draw_laser=False)
+    # Run multiple scenarios with each starting from a different time
+    # The target does not move when fast forwarding the sim
+    for i in range(number_sims):
+        # Only render for first sim (Mostly just for debugging)
+        render = i == 0
+        draw = i == 0
+
+        sim = Simulation(scenario_path, render=render, draw_env=draw, pre_steps=i)
+        output_file = os.path.join(path, "output", f"{fname}{i}.csv")
+
+        with open(output_file, 'w') as f:
+            f.write("Time,x,y,is_target\n")
+            for _ in range(1):
+                sim.step_time()
+                sim.render(draw_laser=False)
+                f.write(f"{sim.t},{sim.last_intersection[0]},{sim.last_intersection[1]},False\n")
+                print(sim.t, sim.last_intersection)
     # x = 300
     # for t in range(360):
     #     sim.step(t)
