@@ -166,15 +166,21 @@ if __name__ == "__main__":
         draw = i == 0
 
         sim = Simulation(scenario_path, render=render, draw_env=draw, pre_steps=i)
-        output_file = os.path.join(path, "output", f"{fname}{i}.csv")
+        output_dir = os.path.join(path, "output", fname)
+        if not os.path.exists(os.path.join(path, "output")):
+            os.mkdir(os.path.join(path, "output"))
+        if not os.path.exists(output_dir):
+            os.mkdir(output_dir)
+        output_file = os.path.join(output_dir, f"{fname}{i}.csv")
 
         with open(output_file, 'w') as f:
-            f.write("Time,x,y,is_target\n")
-            for _ in range(170):
+            f.write("Time,is_target,x,y\n")
+            for _ in range(1):
                 sim.step_time()
                 sim.render(draw_laser=False)
-                f.write(f"{sim.t},{sim.last_intersection[0]},"
-                        f"{sim.last_intersection[1]},{sim.found_target}\n")
+                f.write(f"{sim.t},{sim.found_target}," +
+                        f"{sim.last_intersection[0]}," +
+                        f"{sim.last_intersection[1]},\n")
                 print(sim.t, sim.last_intersection)
     # x = 300
     # for t in range(360):
