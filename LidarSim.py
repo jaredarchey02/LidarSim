@@ -4,19 +4,22 @@ import pylab as plt
 import numpy as np
 import os
 
-def closest_point(point, point_arr, compare):
+
+def closest_point(point, point_arr, compare, centers):
     mag = lambda p: np.sqrt(p[0] ** 2 + p[1] ** 2)
     point_mag = mag(point)
     closest = None
     _closest_point = None
     compare_true = None
+    center = None
     for i, target_point in enumerate(point_arr):
         mag_diff = mag(target_point) - point_mag
         if closest is None or mag_diff < closest:
             closest = mag_diff
             _closest_point = target_point
             compare_true = compare[i]
-    return _closest_point, compare_true
+            center = centers[i]
+    return _closest_point, compare_true, center
 
 
 class Simulation(object):
@@ -38,6 +41,7 @@ class Simulation(object):
         self.rendering = render
         self.last_intersection = None
         self.found_target = False
+        self.center = None
         for _ in range(pre_steps):
             self.step_time(move=False)
         #self.step(0)
@@ -70,15 +74,26 @@ class Simulation(object):
             self.sampling = True
             laser = self._laser()
             intersection = []
-            is_target = []
+            mag = lambda p: np.sqrt(p[0] ** 2 + p[1] ** 2)
+            point_mag = mag(self.lidar_pos.to_cartesian())
+            closest = None
+            _closest_point = None
+            object_found = None
             for obj in self.environment:
-                intersection.extend(obj.get_laser_points(laser))
-                is_target.append(obj == self.scenario.target)
+                for i, target_point in enumerate(obj.get_laser_points(laser)):
+                    mag_diff = mag(target_point) - point_mag
+                    if closest is None or mag_diff < closest:
+                        closest = mag_diff
+                        _closest_point = target_point
+                        object_found = obj
+            #print(len(is_target), len(intersection), len(centers))
             #print(intersection)
-            intersection, is_target = closest_point(self.lidar_pos.to_cartesian(),
-                                                    intersection, is_target)
-            self.last_intersection = intersection
-            self.found_target = is_target
+            # intersection, is_target, center = closest_point(
+            #     self.lidar_pos.to_cartesian(), intersection,
+            #     is_target, centers)
+            self.last_intersection = _closest_point
+            self.found_target = object_found == self.scenario.target
+            self.center = (object_found.x, object_found.y)
             if self.rendering:
                 self.ax.plot(*intersection, 'ro')
         else:
@@ -95,11 +110,24 @@ class Simulation(object):
         self.lidar_pos.set_theta(self.scenario.sensor.v_profile[0] * self.t)
         laser = self._laser()
         intersection = []
+        mag = lambda p: np.sqrt(p[0] ** 2 + p[1] ** 2)
+        point_mag = mag(self.lidar_pos.to_cartesian())
+        closest = None
+        _closest_point = None
+        object_found = None
         for obj in self.environment:
-            intersection.extend(obj.get_laser_points(laser))
-        intersection, is_target = closest_point(self.lidar_pos.to_cartesian(),
-                                                intersection)
-        #self.last_intersection = intersection
+            for i, target_point in enumerate(obj.get_laser_points(laser)):
+                mag_diff = mag(target_point) - point_mag
+                if closest is None or mag_diff < closest:
+                    closest = mag_diff
+                    _closest_point = target_point
+                    object_found = obj
+        # for obj in self.environment:
+        #     intersection.extend(obj.get_laser_points(laser))
+        # intersection, is_target, center = closest_point(
+        #     self.lidar_pos.to_cartesian(), intersection)
+
+        self.last_intersection = closest
         if self.rendering:
             self.ax.plot(*intersection, 'ro')
 
@@ -154,7 +182,7 @@ if __name__ == "__main__":
     path, fname = os.path.split(path)
 
     # Number of sims to run, each sim begins 1 time step later than the previous
-    number_sims = 1
+    number_sims = 5
     create_dev_file(dev_scenario)
     scenario_path = dev_scenario
 
@@ -174,14 +202,16 @@ if __name__ == "__main__":
         output_file = os.path.join(output_dir, f"{fname}{i}.csv")
 
         with open(output_file, 'w') as f:
-            f.write("Time,is_target,x,y\n")
-            for _ in range(1):
+            f.write("Time,is_target,x,y,obj_x0,obj_y0\n")
+            for _ in range(200):
                 sim.step_time()
                 sim.render(draw_laser=False)
+                #print(sim.center)
                 f.write(f"{sim.t},{sim.found_target}," +
                         f"{sim.last_intersection[0]}," +
-                        f"{sim.last_intersection[1]},\n")
-                print(sim.t, sim.last_intersection)
+                        f"{sim.last_intersection[1]}," +
+                        f"{sim.center[0]},{sim.center[1]}\n")
+                #print(sim.t, sim.last_intersection)
     # x = 300
     # for t in range(360):
     #     sim.step(t)
