@@ -9,12 +9,14 @@ import numpy as np
 3D plot showing sensor angular velocity, Object velocity,
 FOM
 
+
+
 """
 
 def cart_to_polar(x, y):
     return np.sqrt(x ** 2 + y ** 2), np.arctan(y / x)
 
-def create_dev_file(outfile):
+def create_dev_file(outfile, vbias):
     sensor = LidarSensor(10,             # Sensor radius
                          [100, 10000],   # Sensor range
                          2 * np.pi * 5)  # Sensor velocity rad/s
@@ -24,14 +26,14 @@ def create_dev_file(outfile):
                      10000,  # Room height
                      0)      # Room rotation
     target = Rectangle(2000,   # Target x
-                       -2000,  # Target y
-                       2000,   # Target width
-                       50,     # Target height
+                       -12000,  # Target y
+                       20000,   # Target width
+                       20000,     # Target height
                        0)      # Target rotation
     step_size_s = 1e-3
     sensor_sample_rate_s = step_size_s
     target_v = [
-        -2000,  # x velocity mm/s
+        -2000 + vbias,  # x velocity mm/s
         0]      # y velocity mm/s
     scenario = Scenario(step_size_s, sensor_sample_rate_s, sensor,
                         room, target, target_v)
@@ -124,7 +126,7 @@ class Rectangle(object):
 
         # center_x = self.x + (self.width / 2)
         # center_y = self.y - (self.height / 2)
-
+        #print(self.width, self.height)
         r = np.sqrt((self.width / 2) ** 2 + (self.height / 2) ** 2)
         top_left = Position(r, 3 * np.pi / 4 + self.theta).to_cartesian() \
             + center

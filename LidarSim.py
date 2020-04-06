@@ -102,6 +102,11 @@ class Simulation(object):
         else:
             self.sampling = False
 
+    def draw_target(self):
+        if not self.rendering:
+            return
+        self._draw_rectangle(self.scenario.target)
+
     def move_target(self):
         # todo: target_v should be function of t and output velocity in mm/s
         self.velocity = self.scenario.target_v
@@ -180,44 +185,47 @@ class Simulation(object):
 if __name__ == "__main__":
 
     # Add scenario to run here
-    dev_scenario = "scenarios/dev.yaml"
 
-    # Seperate parts of file
-    path, _ = os.path.splitext(dev_scenario)
-    path, fname = os.path.split(path)
 
-    # Number of sims to run, each sim begins 1 time step later than the previous
-    number_sims = 5
-    create_dev_file(dev_scenario)
-    scenario_path = dev_scenario
+    for j in range(100):
+        # Seperate parts of file
+        dev_scenario = os.path.join("scenarios","dev",f"dev_{j}.yaml")
+        path, _ = os.path.splitext(dev_scenario)
+        path, fname = os.path.split(path)
 
-    # Run multiple scenarios with each starting from a different time
-    # The target does not move when fast forwarding the sim
-    for i in range(number_sims):
-        # Only render for first sim (Mostly just for debugging)
-        render = i == 0
-        draw = i == 0
+        # Number of sims to run, each sim begins 1 time step later than the previous
+        number_sims = 1
+        create_dev_file(dev_scenario, vbias=-2000 * j)
+        scenario_path = dev_scenario
 
-        sim = Simulation(scenario_path, render=render, draw_env=draw, pre_steps=i)
-        output_dir = os.path.join(path, "output", fname)
-        if not os.path.exists(os.path.join(path, "output")):
-            os.mkdir(os.path.join(path, "output"))
-        if not os.path.exists(output_dir):
-            os.mkdir(output_dir)
-        output_file = os.path.join(output_dir, f"{fname}{i}.csv")
+        # Run multiple scenarios with each starting from a different time
+        # The target does not move when fast forwarding the sim
+        for i in range(number_sims):
+            # Only render for first sim (Mostly just for debugging)
+            render = False#i == 0
+            draw = False#i == 0
 
-        with open(output_file, 'w') as f:
-            f.write("Time,is_target,x,y,obj_x0,obj_y0,target_v_x,target_v_y,sensor_v\n")
-            for _ in range(200):
-                sim.step_time()
-                sim.render(draw_laser=False)
-                #print(sim.center)
-                f.write(f"{sim.t},{sim.found_target}," +
-                        f"{sim.last_intersection[0]}," +
-                        f"{sim.last_intersection[1]}," +
-                        f"{sim.center[0]},{sim.center[1]}," +
-                        f"{sim.velocity[0]},{sim.velocity[1]}," +
-                        f"{sim.sensor_velocity}\n")
+            sim = Simulation(scenario_path, render=render, draw_env=draw, pre_steps=i)
+            output_dir = os.path.join(path, "output", fname)
+            if not os.path.exists(os.path.join(path, "output")):
+                os.mkdir(os.path.join(path, "output"))
+            if not os.path.exists(output_dir):
+                os.mkdir(output_dir)
+            output_file = os.path.join(output_dir, f"{fname}{i}.csv")
+
+            with open(output_file, 'w') as f:
+                f.write("Time,is_target,x,y,obj_x0,obj_y0,target_v_x,target_v_y,sensor_v\n")
+                for _ in range(200):
+                    sim.step_time()
+                    sim.render(draw_laser=False)
+                    #print(sim.center)
+                    f.write(f"{sim.t},{sim.found_target}," +
+                            f"{sim.last_intersection[0]}," +
+                            f"{sim.last_intersection[1]}," +
+                            f"{sim.center[0]},{sim.center[1]}," +
+                            f"{sim.velocity[0]},{sim.velocity[1]}," +
+                            f"{sim.sensor_velocity}\n")
+                sim.draw_target()
                 #print(sim.t, sim.last_intersection)
     # x = 300
     # for t in range(360):
