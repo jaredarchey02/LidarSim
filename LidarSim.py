@@ -42,6 +42,8 @@ class Simulation(object):
         self.last_intersection = None
         self.found_target = False
         self.center = None
+        self.velocity = [0, 0]
+        self.sensor_velocity = 0
         for _ in range(pre_steps):
             self.step_time(move=False)
         #self.step(0)
@@ -63,6 +65,7 @@ class Simulation(object):
     def control_lidar(self):
         # todo: V profile should be function of t and output velocity in mm/s
         # V profile is how fast it turns in one sample period
+        self.sensor_velocity = self.scenario.sensor.v_profile
         d_theta = self.scenario.sensor.v_profile * \
                   self.scenario.step_size_s
         self.lidar_pos.pos[1] += d_theta
@@ -101,13 +104,15 @@ class Simulation(object):
 
     def move_target(self):
         # todo: target_v should be function of t and output velocity in mm/s
-        dx = self.scenario.step_size_s * self.scenario.target_v[0]
-        dy = self.scenario.step_size_s * self.scenario.target_v[1]
+        self.velocity = self.scenario.target_v
+        dx = self.scenario.step_size_s * self.velocity[0]
+        dy = self.scenario.step_size_s * self.velocity[1]
         self.scenario.target.x += dx
         self.scenario.target.y += dy
 
     def rotate_lidar(self):
-        self.lidar_pos.set_theta(self.scenario.sensor.v_profile[0] * self.t)
+        self.sensor_velocity = self.scenario.sensor.v_profile[0]
+        self.lidar_pos.set_theta(self.sensor_velocity * self.t)
         laser = self._laser()
         intersection = []
         mag = lambda p: np.sqrt(p[0] ** 2 + p[1] ** 2)
@@ -202,7 +207,7 @@ if __name__ == "__main__":
         output_file = os.path.join(output_dir, f"{fname}{i}.csv")
 
         with open(output_file, 'w') as f:
-            f.write("Time,is_target,x,y,obj_x0,obj_y0\n")
+            f.write("Time,is_target,x,y,obj_x0,obj_y0,target_v_x,target_v_y,sensor_v\n")
             for _ in range(200):
                 sim.step_time()
                 sim.render(draw_laser=False)
@@ -210,7 +215,9 @@ if __name__ == "__main__":
                 f.write(f"{sim.t},{sim.found_target}," +
                         f"{sim.last_intersection[0]}," +
                         f"{sim.last_intersection[1]}," +
-                        f"{sim.center[0]},{sim.center[1]}\n")
+                        f"{sim.center[0]},{sim.center[1]}," +
+                        f"{sim.velocity[0]},{sim.velocity[1]}," +
+                        f"{sim.sensor_velocity}\n")
                 #print(sim.t, sim.last_intersection)
     # x = 300
     # for t in range(360):
