@@ -187,7 +187,7 @@ if __name__ == "__main__":
     # Add scenario to run here
 
 
-    for j in range(100):
+    for j in range(1):
         # Seperate parts of file
         dev_scenario = os.path.join("scenarios","dev",f"dev_{j}.yaml")
         path, _ = os.path.splitext(dev_scenario)

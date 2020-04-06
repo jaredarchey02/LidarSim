@@ -42,12 +42,12 @@ if __name__ == "__main__":
 
     root_dir = os.path.join("scenarios", "dev", "output")
     fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+    ax = fig.add_subplot(111)
     for i in range(len(os.listdir(root_dir))):
         scenario_name = f"dev_{i}"
         output_path = os.path.join(root_dir, scenario_name)
         data = scenario_output_to_df(output_path)
 
-        ax.plot(data[0].target_r, data[0].target_theta, data[0].target_v_x)
+        ax.plot(data[0].target_r, data[0].target_theta)
 
     plt.show()
